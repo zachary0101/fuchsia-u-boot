@@ -234,8 +234,8 @@
             "\0"\
         "upgrade_key="\
             "if gpio input GPIOAO_2; then "\
-                "echo detect upgrade key; sleep 3;"\
-                "if gpio input GPIOAO_2; then run update; fi;"\
+                "echo detect upgrade key; sleep 1;"\
+                "if gpio input GPIOAO_2; then fastboot; fi;"\
             "fi;"\
             "\0"\
         "vim2_check="\
@@ -277,6 +277,7 @@
 #define CONFIG_ANDROID_BOOT_IMAGE 1
 #define CONFIG_ANDROID_IMG 1
 #define CONFIG_SYS_BOOTM_LEN (64<<20) /* Increase max gunzip size*/
+#define CONFIG_ZIRCON_BOOT_IMAGE 1
 
 /* cpu */
 #define CONFIG_CPU_CLK					1200 //MHz. Range: 600-1800, should be multiple of 24

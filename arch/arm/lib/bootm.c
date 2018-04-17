@@ -37,6 +37,10 @@
 
 static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
 							const void* payload, uint32_t length);
+
+#if defined(CONFIG_KVIM2)
+#include <zircon/board/kvim2/board-config.h>
+#endif
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
