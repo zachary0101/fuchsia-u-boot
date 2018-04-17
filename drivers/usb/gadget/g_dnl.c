@@ -296,6 +296,10 @@ int g_dnl_register(const char *name)
 	}
 
 	s = getenv("serial");
+	if (!s) {
+		/* use ethernet MAC address instead */
+		s = getenv("eth_mac");
+	}
 	if (s) {
 		g_dnl_set_serialnumber(s);
 	}
