@@ -1,6 +1,6 @@
 
 /*
- * board/khadas/configs/kvim2.h
+ * board/khadas/configs/kvim2l.h
  *
  * Copyright (C) 2015 Amlogic, Inc. All rights reserved.
  *
@@ -19,8 +19,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef __KVIM2_H__
-#define __KVIM2_H__
+#ifndef __KVIM2L_H__
+#define __KVIM2L_H__
 
 #ifndef __SUSPEND_FIRMWARE__
 #include <asm/arch/cpu.h>
@@ -43,7 +43,7 @@
 #define CONFIG_VDDEE_SLEEP_VOLTAGE	 850		// voltage for suspend
 
 /* configs for CEC */
-#define CONFIG_CEC_OSD_NAME		"KVim2"
+#define CONFIG_CEC_OSD_NAME		"KVim2l"
 
 #define CONFIG_INSTABOOT
 
@@ -76,7 +76,7 @@
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 4
 #define CONFIG_IR_REMOTE_USE_PROTOCOL 0         // 0:nec  1:duokan  2:Toshiba 3:rca 4:rcmm
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0XEB14FF00 //amlogic tv ir --- power
-#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0XFF00FE01 //dvb ir  --- power
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0Xffffffff //amlogic tv ir --- ch+
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xffffffff //amlogic tv ir --- ch-
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4 0xBA45BD02
 
@@ -143,7 +143,6 @@
             "fi;fi;fi;fi;"\
             "\0" \
         "storeboot="\
-            "kbi resetflag 0;"\
             "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
             "run update;"\
             "\0"\
@@ -235,8 +234,8 @@
             "\0"\
         "upgrade_key="\
             "if gpio input GPIOAO_2; then "\
-                "echo detect upgrade key; sleep 1;"\
-                "if gpio input GPIOAO_2; then fastboot; fi;"\
+                "echo detect upgrade key; sleep 3;"\
+                "if gpio input GPIOAO_2; then run update; fi;"\
             "fi;"\
             "\0"\
         "vim2_check="\
@@ -248,7 +247,6 @@
             "fi;fi;"\
             "\0"\
          "wol_init="\
-            "kbi init;"\
             "kbi powerstate;"\
             "kbi trigger wol r;"\
             "setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
@@ -279,13 +277,11 @@
 #define CONFIG_ANDROID_BOOT_IMAGE 1
 #define CONFIG_ANDROID_IMG 1
 #define CONFIG_SYS_BOOTM_LEN (64<<20) /* Increase max gunzip size*/
-#define CONFIG_ZIRCON_BOOT_IMAGE 1
 
 /* cpu */
 #define CONFIG_CPU_CLK					1200 //MHz. Range: 600-1800, should be multiple of 24
 
 /* ddr */
-#define CONFIG_DDR_AUTO_DTB             1
 #define CONFIG_DDR_SIZE					0 //MB //0 means ddr size auto-detect
 #define CONFIG_DDR_CLK					912  //MHz, Range: 384-1200, should be multiple of 24
 #define CONFIG_DDR4_CLK					1008  //MHz, for boards which use different ddr chip
@@ -443,7 +439,7 @@
 #define CONFIG_USB_GADGET 1
 #define CONFIG_USBDOWNLOAD_GADGET 1
 #define CONFIG_SYS_CACHELINE_SIZE 64
-#define CONFIG_DEVICE_PRODUCT	"q200"
+#define CONFIG_DEVICE_PRODUCT	"q201"
 
 //UBOOT Facotry usb/sdcard burning config
 #define CONFIG_AML_V2_FACTORY_BURN              1       //support facotry usb burning
