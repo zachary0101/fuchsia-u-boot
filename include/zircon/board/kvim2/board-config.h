@@ -9,6 +9,8 @@
 #define PDEV_VID_KHADAS             4
 #define PDEV_PID_VIM2               2
 
+#define CRASHLOG_NVRAM_LENGTH       (1024 * 1024)
+
 const char* BOOTLOADER_VERSION = "zircon-bootloader=0.05";
 
 static const bootdata_cpu_config_t cpu_config = {
@@ -310,6 +312,12 @@ static void append_board_bootdata(bootdata_t* bootdata) {
     if (!strcmp(ddr_size, "3")) {
         mem_config[0].length = 0xc0000000;
     }
+
+    // allocate crashlog save area at end of RAM
+    bootdata_nvram_t nvram;
+    nvram.base = mem_config[0].length - CRASHLOG_NVRAM_LENGTH;
+    nvram.length = CRASHLOG_NVRAM_LENGTH;
+    append_bootdata(bootdata, BOOTDATA_LASTLOG_NVRAM, 0, &nvram, sizeof(nvram));
 
     // add memory configuration
     append_bootdata(bootdata, BOOTDATA_MEM_CONFIG, 0, &mem_config, sizeof(mem_config));
