@@ -31,16 +31,7 @@
 #endif
 
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
-#include <zircon/bootdata.h>
-#include <zircon/driver-config.h>
-#include <zircon/gpt.h>
-
-static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
-							const void* payload, uint32_t length);
-
-#if defined(CONFIG_KVIM2)
-#include <zircon/board/kvim2/board-config.h>
-#endif
+#include <zircon/zircon.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -419,8 +410,8 @@ void boot_jump_vxworks(bootm_headers_t *images)
 
 #define ZIRCON_KERNEL_ALIGN	65536
 
-static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
-							const void* payload, uint32_t length) {
+void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra, const void* payload,
+                     uint32_t length) {
 	bootdata_t* dest = (bootdata_t*)((uintptr_t)container + container->length + sizeof(bootdata_t));
 
 	dest->type = type;
@@ -446,7 +437,11 @@ int do_bootm_zircon(int flag, int argc, char * const argv[],
 	const bootdata_t* kernel_hdr = &bootdata[1];
 	const bootdata_kernel_t* kernel = (bootdata_kernel_t *)&bootdata[2];
 
-	append_board_bootdata(bootdata);
+	int ret = zircon_preboot(bootdata);
+	if (ret < 0) {
+	    printf("zircon_preboot failed\n");
+	    return ret;
+	}
 
 	uint32_t bootdata_len = bootdata->length + sizeof(bootdata_t);
 	uint32_t kernel_len = kernel_hdr->length + 2 * sizeof(bootdata_t);
