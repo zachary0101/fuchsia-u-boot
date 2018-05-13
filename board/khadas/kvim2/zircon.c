@@ -4,14 +4,16 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  */
 
+#include <common.h>
 #include <part.h>
+#include <zircon/zircon.h>
 
 #define PDEV_VID_KHADAS             4
 #define PDEV_PID_VIM2               2
 
 #define CRASHLOG_NVRAM_LENGTH       (1024 * 1024)
 
-const char* BOOTLOADER_VERSION = "zircon-bootloader=0.05";
+const char* BOOTLOADER_VERSION = "zircon-bootloader=0.06";
 
 static const bootdata_cpu_config_t cpu_config = {
     .cluster_count = 2,
@@ -302,7 +304,7 @@ failed:
     printf("MAC address parsing failed for \"%s\"\n", getenv("eth_mac"));
 }
 
-static void append_board_bootdata(bootdata_t* bootdata) {
+int zircon_preboot(bootdata_t* bootdata) {
     // add CPU configuration
     append_bootdata(bootdata, BOOTDATA_CPU_CONFIG, 0, &cpu_config,
                     sizeof(bootdata_cpu_config_t) +
@@ -344,4 +346,5 @@ static void append_board_bootdata(bootdata_t* bootdata) {
 
     add_partition_map(bootdata);
     add_eth_mac_address(bootdata);
+    return 0;
  }
