@@ -14,7 +14,7 @@
 #include <amlogic/storage_if.h>
 #include <image.h>
 #include <android_image.h>
-#include <zircon/bootdata.h>
+#include <zircon/image.h>
 #include <asm/arch/bl31_apis.h>
 #include <asm/arch/secure_apb.h>
 #include <libfdt.h>
@@ -275,8 +275,8 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 	} 
 	else if (genFmt == IMAGE_FORMAT_ZIRCON)
 	{
-		const bootdata_t *bootdata = (bootdata_t*)hdr_addr;
-		actualBootImgSz = bootdata->length + sizeof(*bootdata);
+		const zbi_header_t *zbi = (zbi_header_t*)hdr_addr;
+		actualBootImgSz = zbi->length + sizeof(*zbi);
 	}
 	else
 	{
