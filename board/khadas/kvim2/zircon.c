@@ -11,11 +11,11 @@
 #define PDEV_VID_KHADAS             4
 #define PDEV_PID_VIM2               2
 
-#define CRASHLOG_NVRAM_LENGTH       (1024 * 1024)
+#define NVRAM_LENGTH                (1024 * 1024)
 
 const char* BOOTLOADER_VERSION = "zircon-bootloader=0.06";
 
-static const bootdata_cpu_config_t cpu_config = {
+static const zbi_cpu_config_t cpu_config = {
     .cluster_count = 2,
     .clusters = {
         {
@@ -27,38 +27,38 @@ static const bootdata_cpu_config_t cpu_config = {
     },
 };
 
-static bootdata_mem_range_t mem_config[] = {
+static zbi_mem_range_t mem_config[] = {
     {
-        .type = BOOTDATA_MEM_RANGE_RAM,
+        .type = ZBI_MEM_RANGE_RAM,
         .length = 0x80000000, // 2GB
     },
     {
-        .type = BOOTDATA_MEM_RANGE_PERIPHERAL,
+        .type = ZBI_MEM_RANGE_PERIPHERAL,
         .paddr = 0xc0000000,
         .length = 0x20000000,
     },
     {
-        .type = BOOTDATA_MEM_RANGE_RESERVED,
+        .type = ZBI_MEM_RANGE_RESERVED,
         .paddr = 0,
         .length = 0x001000000,
     },
     {
-        .type = BOOTDATA_MEM_RANGE_RESERVED,
+        .type = ZBI_MEM_RANGE_RESERVED,
         .paddr = 0x10000000,
         .length = 0x00200000,
     },
     {
-        .type = BOOTDATA_MEM_RANGE_RESERVED,
+        .type = ZBI_MEM_RANGE_RESERVED,
         .paddr = 0x05100000,
         .length = 0x2000000,
     },
     {
-        .type = BOOTDATA_MEM_RANGE_RESERVED,
+        .type = ZBI_MEM_RANGE_RESERVED,
         .paddr = 0x7300000,
         .length = 0x100000,
     },
     {
-        .type = BOOTDATA_MEM_RANGE_RESERVED,
+        .type = ZBI_MEM_RANGE_RESERVED,
         .paddr = 0x75000000,
         .length = 0x9000000,
     },
@@ -95,7 +95,7 @@ static const dcfg_amlogic_hdcp_driver_t hdcp_driver = {
     .hdmitx_phys = 0xc883a000,
 };
 
-static const bootdata_platform_id_t platform_id = {
+static const zbi_platform_id_t platform_id = {
     .vid = PDEV_VID_KHADAS,
     .pid = PDEV_PID_VIM2,
     .board_name = "vim2",
@@ -112,7 +112,7 @@ enum {
     PART_COUNT,
 };
 
-static bootdata_partition_map_t partition_map = {
+static zbi_partition_map_t partition_map = {
     // .block_count filled in below
     // .block_size filled in below
     .guid = {},
@@ -177,7 +177,7 @@ static bootdata_partition_map_t partition_map = {
     },
 };
 
-static void add_partition_map(bootdata_t* bootdata) {
+static void add_partition_map(zbi_header_t* zbi) {
     block_dev_desc_t* dev_desc;
     disk_partition_t bootloader_info;
     disk_partition_t boot_info;
@@ -261,9 +261,9 @@ static void add_partition_map(bootdata_t* bootdata) {
     partition_map.block_count = data_info.start + data_info.size;
     partition_map.block_size = data_info.blksz;
 
-    append_bootdata(bootdata, BOOTDATA_PARTITION_MAP, 0, &partition_map,
-                    sizeof(bootdata_partition_map_t) +
-                    partition_map.partition_count * sizeof(bootdata_partition_t));
+    zircon_append_boot_item(zbi, ZBI_TYPE_DRV_PARTITION_MAP, 0, &partition_map,
+                            sizeof(zbi_partition_map_t) +
+                            partition_map.partition_count * sizeof(zbi_partition_t));
 }
 
 static int hex_digit(char ch) {
@@ -278,7 +278,7 @@ static int hex_digit(char ch) {
     }
 }
 
-static void add_eth_mac_address(bootdata_t* bootdata) {
+static void add_eth_mac_address(zbi_header_t* zbi) {
     char* str = getenv("eth_mac");
     uint8_t addr[6];
 
@@ -297,18 +297,18 @@ static void add_eth_mac_address(bootdata_t* bootdata) {
         }
     }
 
-    append_bootdata(bootdata, BOOTDATA_MAC_ADDRESS, 0, addr, sizeof(addr));
+    zircon_append_boot_item(zbi, ZBI_TYPE_DRV_MAC_ADDRESS, 0, addr, sizeof(addr));
     return;
 
 failed:
     printf("MAC address parsing failed for \"%s\"\n", getenv("eth_mac"));
 }
 
-int zircon_preboot(bootdata_t* bootdata) {
+int zircon_preboot(zbi_header_t* zbi) {
     // add CPU configuration
-    append_bootdata(bootdata, BOOTDATA_CPU_CONFIG, 0, &cpu_config,
-                    sizeof(bootdata_cpu_config_t) +
-                    sizeof(bootdata_cpu_cluster_t) * cpu_config.cluster_count);
+    zircon_append_boot_item(zbi, ZBI_TYPE_CPU_CONFIG, 0, &cpu_config,
+                            sizeof(zbi_cpu_config_t) +
+                            sizeof(zbi_cpu_cluster_t) * cpu_config.cluster_count);
 
     const char* ddr_size = getenv("ddr_size");
     if (!strcmp(ddr_size, "3")) {
@@ -316,35 +316,36 @@ int zircon_preboot(bootdata_t* bootdata) {
     }
 
     // allocate crashlog save area at end of RAM
-    bootdata_nvram_t nvram;
-    nvram.base = mem_config[0].length - CRASHLOG_NVRAM_LENGTH;
-    nvram.length = CRASHLOG_NVRAM_LENGTH;
-    append_bootdata(bootdata, BOOTDATA_LASTLOG_NVRAM, 0, &nvram, sizeof(nvram));
+    zbi_nvram_t nvram;
+    nvram.base = mem_config[0].length - NVRAM_LENGTH;
+    nvram.length = NVRAM_LENGTH;
+    zircon_append_boot_item(zbi, ZBI_TYPE_NVRAM, 0, &nvram, sizeof(nvram));
 
     // add memory configuration
-    append_bootdata(bootdata, BOOTDATA_MEM_CONFIG, 0, &mem_config, sizeof(mem_config));
+    zircon_append_boot_item(zbi, ZBI_TYPE_MEM_CONFIG, 0, &mem_config, sizeof(mem_config));
 
     // add kernel drivers
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_AMLOGIC_UART, &uart_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_AMLOGIC_UART, &uart_driver,
                     sizeof(uart_driver));
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_ARM_GIC_V2, &gicv2_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_ARM_GIC_V2, &gicv2_driver,
                     sizeof(gicv2_driver));
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_ARM_PSCI, &psci_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_ARM_PSCI, &psci_driver,
                     sizeof(psci_driver));
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_ARM_GENERIC_TIMER, &timer_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_ARM_GENERIC_TIMER, &timer_driver,
                     sizeof(timer_driver));
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
                     sizeof(hdcp_driver));
 
-    append_bootdata(bootdata, BOOTDATA_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
+    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
                     sizeof(hdcp_driver));
 
-    append_bootdata(bootdata, BOOTDATA_CMDLINE, 0, BOOTLOADER_VERSION, strlen(BOOTLOADER_VERSION) + 1);
+    zircon_append_boot_item(zbi, ZBI_TYPE_CMDLINE, 0, BOOTLOADER_VERSION,
+                            strlen(BOOTLOADER_VERSION) + 1);
 
     // add platform ID
-    append_bootdata(bootdata, BOOTDATA_PLATFORM_ID, 0, &platform_id, sizeof(platform_id));
+    zircon_append_boot_item(zbi, ZBI_TYPE_PLATFORM_ID, 0, &platform_id, sizeof(platform_id));
 
-    add_partition_map(bootdata);
-    add_eth_mac_address(bootdata);
+    add_partition_map(zbi);
+    add_eth_mac_address(zbi);
     return 0;
  }
