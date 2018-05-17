@@ -35,9 +35,7 @@ int zircon_image_check_header(const void *hdr)
 	return (zbi[0].type == ZBI_TYPE_CONTAINER &&
 			zbi[0].extra == ZBI_CONTAINER_MAGIC &&
 			zbi[0].magic == ZBI_ITEM_MAGIC &&
-			ZBI_IS_KERNEL_BOOTITEM(zbi[1].type) &&  // TODO: change this to comparison with
-			                                        // ZBI_TYPE_KERNEL_ARM64 after zircon kernel
-			                                        // is switched over
+			zbi[1].type == ZBI_TYPE_KERNEL_ARM64 &&
 			zbi[1].magic == ZBI_ITEM_MAGIC) ? 0 : -1;
 }
 
