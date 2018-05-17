@@ -144,6 +144,7 @@
             "fi;fi;fi;fi;"\
             "\0" \
         "storeboot="\
+            "kbi resetflag 1;sleep 1;" \
             "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
             "run update;"\
             "\0"\
