@@ -5,6 +5,7 @@
 #
 
 obj-y += imx8m_evk.o
+obj-y += zircon.o
 
 ifdef CONFIG_SPL_BUILD
 obj-y += spl.o

@@ -30,17 +30,8 @@
 #include <asm/armv7.h>
 #endif
 
-#if defined(CONFIG_FUCHSIA_BOOT_IMAGE)
-#include <fuchsia/bootdata.h>
-#include <fuchsia/driver-config.h>
-
-static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
-							const void* payload, uint32_t length);
-
-#if defined(CONFIG_IMX8MEVK)
-#include <fuchsia/board/imx8mevk/board-config.h>
-#endif
-
+#if defined(CONFIG_ZIRCON_BOOT_IMAGE)
+#include <zircon/zircon.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -448,57 +439,41 @@ void boot_jump_vxworks(bootm_headers_t *images)
 #endif
 
 
-#if defined(CONFIG_FUCHSIA_BOOT_IMAGE)
+#if defined(CONFIG_ZIRCON_BOOT_IMAGE)
 
-#define FUCHSIA_KERNEL_ALIGN	65536
+#define ZIRCON_KERNEL_ALIGN	65536
 
-static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
-							const void* payload, uint32_t length) {
-	bootdata_t* dest = (bootdata_t*)((uintptr_t)container + container->length + sizeof(bootdata_t));
-
-	dest->type = type;
-	dest->length = length;
-	dest->extra = extra;
-	dest->flags = 0;
-	dest->reserved0 = 0;
-	dest->reserved1 = 0;
-	dest->magic = BOOTITEM_MAGIC;
-	dest->crc32 = BOOTITEM_NO_CRC32;
-
-	if (length) {
-		memcpy(dest + 1, payload, length);
-	}
-	length = BOOTDATA_ALIGN(length + sizeof(bootdata_t));
-	container->length += length;
-}
-
-int do_bootm_fuchsia(int flag, int argc, char * const argv[],
+int do_bootm_zircon(int flag, int argc, char * const argv[],
 		   bootm_headers_t *images)
 {
-	bootdata_t* bootdata = (bootdata_t *)images->ep;
-	const bootdata_t* kernel_hdr = &bootdata[1];
-	const bootdata_kernel_t* kernel = (bootdata_kernel_t *)&bootdata[2];
+	zbi_header_t* zbi = (zbi_header_t *)images->ep;
+	const zbi_header_t* kernel_hdr = &zbi[1];
+	const zbi_kernel_t* kernel = (zbi_kernel_t *)&zbi[2];
 
-	append_board_bootdata(bootdata);
-
-	uint32_t bootdata_len = bootdata->length + sizeof(bootdata_t);
-	uint32_t kernel_len = kernel_hdr->length + 2 * sizeof(bootdata_t);
-
-	// If bootdata_len is greater than kernel_len,
-	// then we have bootdata records after the kernel.
-	// In that case we must relocate the kernel after the bootdata
-	if (bootdata_len > kernel_len) {
-		uintptr_t dest = (ulong)bootdata + bootdata_len;
-		// align to 64K boundary
-		dest = (dest + FUCHSIA_KERNEL_ALIGN - 1) & ~(FUCHSIA_KERNEL_ALIGN - 1);
-		memcpy((void *)dest, bootdata, kernel_len);
-		images->ep = dest + kernel->entry64;
-	} else {
-		images->ep = (ulong)bootdata + kernel->entry64;
+	int ret = zircon_preboot(zbi);
+	if (ret < 0) {
+	    printf("zircon_preboot failed\n");
+	    return ret;
 	}
 
-	// this will pass the bootdata pointer to the kernel via x0
-	images->ft_addr = (char *)bootdata;
+	uint32_t zbi_len = zbi->length + sizeof(zbi_header_t);
+	uint32_t kernel_len = kernel_hdr->length + 2 * sizeof(zbi_header_t);
+
+	// If zbi_len is greater than kernel_len,
+	// then we have boot items after the kernel.
+	// In that case we must relocate the kernel after the zbi
+	if (zbi_len > kernel_len) {
+		uintptr_t dest = (ulong)zbi + zbi_len;
+		// align to 64K boundary
+		dest = (dest + ZIRCON_KERNEL_ALIGN - 1) & ~(ZIRCON_KERNEL_ALIGN - 1);
+		memcpy((void *)dest, zbi, kernel_len);
+		images->ep = dest + kernel->entry;
+	} else {
+		images->ep = (ulong)zbi + kernel->entry;
+	}
+
+	// this will pass the zbi pointer to the kernel via x0
+	images->ft_addr = (char *)zbi;
 
 	boot_jump_linux(images, flag);
 	return 0;

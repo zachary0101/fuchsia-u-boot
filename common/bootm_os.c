@@ -477,8 +477,8 @@ static boot_os_fn *boot_os[] = {
 #ifdef CONFIG_BOOTM_OPENRTOS
 	[IH_OS_OPENRTOS] = do_bootm_openrtos,
 #endif
-#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
-	[IH_OS_FUCHSIA] = do_bootm_fuchsia,
+#ifdef CONFIG_ZIRCON_BOOT_IMAGE
+	[IH_OS_ZIRCON] = do_bootm_zircon,
 #endif
 };
 
