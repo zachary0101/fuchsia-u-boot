@@ -225,11 +225,17 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     int genFmt = 0;
     unsigned actualBootImgSz = 0;
     unsigned dtbSz = 0;
-    const char* const partName = argv[1];
+    const char* partName;
     unsigned char* loadaddr = 0;
     int rc = 0;
     uint64_t flashReadOff = 0;
     unsigned secureKernelImgSz = 0;
+
+    if (1 < argc) {
+        partName = argv[1];
+    } else {
+        partName = getenv("boot_part");
+    }
 
     if (2 < argc) {
         loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
