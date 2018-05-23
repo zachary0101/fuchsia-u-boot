@@ -68,4 +68,6 @@ obj-$(CONFIG_LIB_UUID) += uuid.o
 obj-y += vsprintf.o
 obj-$(CONFIG_LIB_RAND) += rand.o
 
+obj-$(CONFIG_ZIRCON_BOOT_IMAGE) += kvstore.o
+
 subdir-ccflags-$(CONFIG_CC_OPTIMIZE_LIBS_FOR_SPEED) += -O2
