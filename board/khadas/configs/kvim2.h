@@ -145,7 +145,7 @@
             "\0" \
         "storeboot="\
             "kbi resetflag 1;sleep 1;" \
-            "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
+            "zircon_bootconfig tee boot misc recovery; if imgread kernel; then bootm ${loadaddr}; fi;"\
             "run update;"\
             "\0"\
         "factory_reset_poweroff_protect="\
