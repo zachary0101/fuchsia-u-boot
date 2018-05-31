@@ -148,6 +148,11 @@
             "zircon_bootconfig tee boot misc recovery; if imgread kernel; then bootm ${loadaddr}; fi;"\
             "run update;"\
             "\0"\
+        "storeboot_recovery="\
+            "kbi resetflag 1;sleep 1;" \
+            "setenv boot_part recovery; if imgread kernel; then bootm ${loadaddr}; fi;"\
+            "run update;"\
+            "\0"\
         "factory_reset_poweroff_protect="\
             "echo wipe_data=${wipe_data}; echo wipe_cache=${wipe_cache};"\
             "if test ${wipe_data} = failed; then "\
@@ -239,6 +244,12 @@
                 "if gpio input GPIOAO_2; then fastboot; fi;"\
             "fi;"\
             "\0"\
+        "recovery_key="\
+            "saradc open 0;"\
+            "if saradc get_in_range 0x0 0x1f; then "\
+                "echo reboot into recovery;"\
+            "fi;"\
+            "\0"\
         "vim2_check="\
             "saradc open 1;"\
             "if saradc get_in_range 0x1a0 0x220; then "\
@@ -266,6 +277,7 @@
             "run storeargs;"\
             "run combine_key;" \
             "run upgrade_key;" \
+            "run recovery_key;" \
             "run vim2_check;" \
             "run wol_init;"\
             "forceupdate;" \
