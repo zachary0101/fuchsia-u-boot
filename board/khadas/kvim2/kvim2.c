@@ -44,6 +44,11 @@
 #include <asm/cpu_id.h>
 DECLARE_GLOBAL_DATA_PTR;
 
+// used for forcing update of new environment variables
+// increment VIM2_ENV_VERSION_VALUE when we want to force reloading new environment
+#define VIM2_ENV_VERSION        "vim2-env-version"
+#define VIM2_ENV_VERSION_VALUE  "1"
+
 //new static eth setup
 struct eth_board_socket*  eth_board_skt;
 
@@ -451,6 +456,14 @@ U_BOOT_CMD(hdmi_init, CONFIG_SYS_MAXARGS, 0, do_hdmi_init,
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void){
 	int ret;
+
+    const char* env_version = getenv(VIM2_ENV_VERSION);
+    if (!env_version || strcmp(env_version, VIM2_ENV_VERSION_VALUE)) {
+        printf("forcing reinitialization of environment variables\n");
+        run_command("env default -a", 0);
+        setenv(VIM2_ENV_VERSION, VIM2_ENV_VERSION_VALUE);
+        run_command("env save", 0);
+    }
 
 	run_command("if itest ${firstboot} == 1; then "\
 			"defenv_reserv;setenv firstboot 1; setenv upgrade_step 2; saveenv; fi;", 0);
