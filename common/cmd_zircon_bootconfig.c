@@ -30,28 +30,18 @@ static int do_zircon_bootconfig(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
     uint8_t buffer[ZX_SYSCONFIG_KVSTORE_SIZE];
 
-    // first try boot-oneshot
-    int oneshot = 1;
-    rc = store_read_ops((unsigned char*)sysconfig, buffer, ZX_SYSCONFIG_BOOT_ONESHOT_OFFSET,
-                         sizeof(buffer));
-    if (rc) {
-        printf("do_sysconfig: store_read_ops failed for %s\n", sysconfig);
-        return rc;
-    }
     rc = kvs_load(&kvs, buffer, sizeof(buffer));
     if (rc < 0) {
-        // use boot-default instead
-        oneshot = 0;
         rc = store_read_ops((unsigned char*)sysconfig, buffer, ZX_SYSCONFIG_BOOT_DEFAULT_OFFSET,
                              sizeof(buffer));
         if (rc) {
             printf("do_sysconfig: store_read_ops failed for %s\n", sysconfig);
-            return rc;
+            return 0;
         }
         rc = kvs_load(&kvs, buffer, sizeof(buffer));
         if (rc < 0) {
             printf("do_sysconfig: kvs_load failed for %s\n", sysconfig);
-            return rc;
+            return 0;
         }
     }
 
@@ -67,20 +57,12 @@ static int do_zircon_bootconfig(cmd_tbl_t *cmdtp, int flag, int argc, char * con
     } else if (!strcmp(boot_part, "r")) {
         zircon_boot = zircon_r;
     } else {
-        printf("invalid boot partition %s\n", boot_part);
-        return -1;
+        printf("invalid boot partition %s, booting to recovery\n", boot_part);
+        zircon_boot = zircon_r;
     }
 
     printf("zircon_bootconfig setting boot_part to %s\n", zircon_boot);
     setenv("boot_part", zircon_boot);
-
-    if (oneshot) {
-        // erase the boot-oneshot section
-        memset(buffer, 0, sizeof(buffer));
-        printf("erasing boot-oneshot section\n");
-        store_write_ops((unsigned char*)sysconfig, buffer, ZX_SYSCONFIG_BOOT_ONESHOT_OFFSET,
-                        sizeof(buffer));
-    }
 
     return 0;
 }
