@@ -248,6 +248,7 @@
             "saradc open 0;"\
             "if saradc get_in_range 0x0 0x1f; then "\
                 "echo reboot into recovery;"\
+                "run storeboot_recovery;" \
             "fi;"\
             "\0"\
         "vim2_check="\

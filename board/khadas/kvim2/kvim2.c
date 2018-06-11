@@ -47,7 +47,7 @@ DECLARE_GLOBAL_DATA_PTR;
 // used for forcing update of new environment variables
 // increment VIM2_ENV_VERSION_VALUE when we want to force reloading new environment
 #define VIM2_ENV_VERSION        "vim2-env-version"
-#define VIM2_ENV_VERSION_VALUE  "1"
+#define VIM2_ENV_VERSION_VALUE  "2"
 
 //new static eth setup
 struct eth_board_socket*  eth_board_skt;
