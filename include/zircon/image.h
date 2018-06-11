@@ -32,7 +32,11 @@
 // make a complete ZBI.
 
 // All items begin at an 8-byte aligned offset into the image.
+#ifdef __ASSEMBLER__
 #define ZBI_ALIGNMENT           (8)
+#else
+#define ZBI_ALIGNMENT           (8u)
+#endif
 
 // Round n up to the next 8 byte boundary
 #define ZBI_ALIGN(n)            (((n) + ZBI_ALIGNMENT - 1) & -ZBI_ALIGNMENT)
@@ -88,6 +92,31 @@ typedef struct {
 } zbi_header_t;
 #endif
 
+// Be sure to add new types to ZBI_ALL_TYPES.
+#define ZBI_ALL_TYPES(macro) \
+    macro(ZBI_TYPE_CONTAINER, "CONTAINER", ".bin") \
+    macro(ZBI_TYPE_KERNEL_X64, "KERNEL_X64", ".bin") \
+    macro(ZBI_TYPE_KERNEL_ARM64, "KERNEL_ARM64", ".bin") \
+    macro(ZBI_TYPE_DISCARD, "DISCARD", ".bin") \
+    macro(ZBI_TYPE_STORAGE_RAMDISK, "RAMDISK", ".bin") \
+    macro(ZBI_TYPE_STORAGE_BOOTFS, "BOOTFS", ".bin") \
+    macro(ZBI_TYPE_CMDLINE, "CMDLINE", ".txt") \
+    macro(ZBI_TYPE_CRASHLOG, "CRASHLOG", ".bin") \
+    macro(ZBI_TYPE_NVRAM, "NVRAM", ".bin") \
+    macro(ZBI_TYPE_PLATFORM_ID, "PLATFORM_ID", ".bin") \
+    macro(ZBI_TYPE_CPU_CONFIG, "CPU_CONFIG", ".bin") \
+    macro(ZBI_TYPE_MEM_CONFIG, "MEM_CONFIG", ".bin") \
+    macro(ZBI_TYPE_KERNEL_DRIVER, "KERNEL_DRIVER", ".bin") \
+    macro(ZBI_TYPE_ACPI_RSDP, "ACPI_RSDP", ".bin") \
+    macro(ZBI_TYPE_SMBIOS, "SMBIOS", ".bin") \
+    macro(ZBI_TYPE_EFI_MEMORY_MAP, "EFI_MEMORY_MAP", ".bin") \
+    macro(ZBI_TYPE_EFI_SYSTEM_TABLE, "EFI_SYSTEM_TABLE", ".bin") \
+    macro(ZBI_TYPE_E820_TABLE, "E820_TABLE", ".bin") \
+    macro(ZBI_TYPE_DEBUG_UART, "DEBUG_UART", ".bin") \
+    macro(ZBI_TYPE_FRAMEBUFFER, "FRAMEBUFFER", ".bin") \
+    macro(ZBI_TYPE_DRV_MAC_ADDRESS, "DRV_MAC_ADDRESS", ".bin") \
+    macro(ZBI_TYPE_DRV_PARTITION_MAP, "DRV_PARTITION_MAP", ".bin")
+
 // Each ZBI starts with a container header.
 //     length:          Total size of the image after this header.
 //                      This includes all item headers, payloads, and padding.
@@ -130,18 +159,14 @@ typedef struct {
 // loader to describe the machine.  The precise protocol for transferring
 // control to the kernel's entry point varies by machine.
 //
-// TODO(mcgrathr): On all machines, the kernel requires some amount of
-// scratch memory to be available immediately after the kernel image at
-// boot.  It needs this space for early setup work before it has a chance
-// to read any memory-map information from the boot loader.  Currently, the
-// kernel simply assumes that enough space is available and clobbers some
-// memory after its load image.  (In zircon-image.elf, the IMAGE_RESERVE_END
-// symbol indicates the end of the address range that will be clobbered.)
-// If the boot loader happened to place its constructed ZBI or other reserved
-// areas immediately after the kernel image, things would go badly.
-// We should amend the protocol with the boot loader so that it knows how
-// much space to reserve after the kernel image.  Either zbi_header_t.extra
-// or zbi_kernel_t.reserved could be repurposed for this.
+// On all machines, the kernel requires some amount of scratch memory to be
+// available immediately after the kernel image at boot.  It needs this
+// space for early setup work before it has a chance to read any memory-map
+// information from the boot loader.  The `reserve_memory_size` field tells
+// the boot loader how much space after the kernel's load image it must
+// leave available for the kernel's use.  The boot loader must place its
+// constructed ZBI or other reserved areas at least this many bytes after
+// the kernel image.
 //
 // x86-64
 //
@@ -178,8 +203,9 @@ typedef struct {
 typedef struct {
     // Entry-point address.  The interpretation of this differs by machine.
     uint64_t entry;
-    // Reserved for future use.
-    uint64_t reserved;
+    // Minimum amount (in bytes) of scratch memory that the kernel requires
+    // immediately after its load image.
+    uint64_t reserve_memory_size;
 } zbi_kernel_t;
 
 // The whole contiguous image loaded into memory by the boot loader.
@@ -391,6 +417,14 @@ typedef struct {
 
 // E820 memory table, an array of e820entry_t.
 #define ZBI_TYPE_E820_TABLE             (0x30323845) // E820
+
+/* EFI Variable for Crash Log */
+#define ZIRCON_VENDOR_GUID \
+    {0x82305eb2, 0xd39e, 0x4575, {0xa0, 0xc8, 0x6c, 0x20, 0x72, 0xd0, 0x84, 0x4c}}
+#define ZIRCON_CRASHLOG_EFIVAR \
+    { 'c', 'r', 'a', 's', 'h', 'l', 'o', 'g', 0 };
+#define ZIRCON_CRASHLOG_EFIATTR \
+    (EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS)
 
 // Debug serial port, a zbi_uart_t entry.
 #define ZBI_TYPE_DEBUG_UART             (0x54524155) // UART

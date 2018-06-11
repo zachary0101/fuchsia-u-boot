@@ -7,7 +7,7 @@
 #define PDEV_VID_NXP                9
 #define PDEV_PID_IMX8MEVK           1
 
-const char* BOOTLOADER_VERSION = "zircon-bootloader=0.04";
+const char* BOOTLOADER_VERSION = "zircon-bootloader=0.05";
 
 static const zbi_cpu_config_t cpu_config = {
     .cluster_count = 1,

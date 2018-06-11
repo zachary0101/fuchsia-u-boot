@@ -31,15 +31,11 @@ void zircon_append_boot_item(zbi_header_t* container, uint32_t type, uint32_t ex
 int zircon_image_check_header(const void *hdr)
 {
 	const zbi_header_t* zbi = hdr;
-printf("zircon_image_check_header zbi[0].type %08x zbi[0].extra %08x zbi[0].magic %08x zbi[1].type %08x\n",
-        zbi[0].type, zbi[0].extra, zbi[0].magic, zbi[1].type);
 
 	return (zbi[0].type == ZBI_TYPE_CONTAINER &&
 			zbi[0].extra == ZBI_CONTAINER_MAGIC &&
 			zbi[0].magic == ZBI_ITEM_MAGIC &&
-			ZBI_IS_KERNEL_BOOTITEM(zbi[1].type) &&  // TODO: change this to comparison with
-			                                        // ZBI_TYPE_KERNEL_ARM64 after zircon kernel
-			                                        // is switched over
+			zbi[1].type == ZBI_TYPE_KERNEL_ARM64 &&
 			zbi[1].magic == ZBI_ITEM_MAGIC) ? 0 : -1;
 }
 
