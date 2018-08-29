@@ -190,5 +190,5 @@
 +											DDR_FUNC_LPDDR3_CA_TRAINING_CA0_BIT1|\
 +											DDR_FUNC_LPDDR3_CA_TRAINING_CA1_BIT0|\
 +											DDR_FUNC_LPDDR3_CA_TRAINING_CA1_BIT1|\
-											(1 << 31) 						\
+											(1u << 31) 						\
 											)
