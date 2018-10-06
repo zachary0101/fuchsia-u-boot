@@ -13,7 +13,7 @@
 
 #define NVRAM_LENGTH                (1024 * 1024)
 
-const char* BOOTLOADER_VERSION = "zircon-bootloader=0.08";
+const char* BOOTLOADER_VERSION = "zircon-bootloader=0.09";
 
 static const zbi_cpu_config_t cpu_config = {
     .cluster_count = 2,

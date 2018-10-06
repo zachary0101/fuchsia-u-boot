@@ -739,12 +739,17 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			memcpy(req->buf, &cdev->desc, value);
 			break;
 		case USB_DT_DEVICE_QUALIFIER:
-			if (!gadget_is_dualspeed(gadget))
-				break;
+// Driver doesn't support stalling so we have to handle this
+//			if (!gadget_is_dualspeed(gadget))
+//				break;
 			device_qual(cdev);
 			value = min_t(int, w_length,
 				      sizeof(struct usb_qualifier_descriptor));
 			break;
+		case 0x0a:  // debug descriptor
+            // return 4 bytes of garbage to make lsusb happy
+			value = min_t(int, w_length, 4);
+            break;
 		case USB_DT_OTHER_SPEED_CONFIG:
 			if (!gadget_is_dualspeed(gadget))
 				break;
