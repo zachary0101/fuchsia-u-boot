@@ -264,6 +264,7 @@
             "kbi powerstate;"\
             "kbi trigger wol r;"\
             "setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
+            "kbi forcereset wol w ${wol_enable};"\
             "\0"
 
 #define CONFIG_PREBOOT  \

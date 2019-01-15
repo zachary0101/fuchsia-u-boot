@@ -21,7 +21,7 @@
 static_assert((CMDLINE_ENTROPY_BITS/8) + 22 < CMDLINE_ENTROPY_SIZE,
               "Requested entropy doesn't fit in cmdline.");
 
-const char* BOOTLOADER_VERSION = "zircon-bootloader=0.10";
+const char* BOOTLOADER_VERSION = "zircon-bootloader=0.11";
 
 static char entropy_cmdline[CMDLINE_ENTROPY_SIZE] = "kernel.entropy-mixin=";
 

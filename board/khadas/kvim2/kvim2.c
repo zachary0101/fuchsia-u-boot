@@ -47,7 +47,7 @@ DECLARE_GLOBAL_DATA_PTR;
 // used for forcing update of new environment variables
 // increment VIM2_ENV_VERSION_VALUE when we want to force reloading new environment
 #define VIM2_ENV_VERSION        "vim2-env-version"
-#define VIM2_ENV_VERSION_VALUE  "3"
+#define VIM2_ENV_VERSION_VALUE  "4"
 
 //new static eth setup
 struct eth_board_socket*  eth_board_skt;
@@ -161,6 +161,12 @@ static void setup_net_chip(void)
 
 	/* power on memory */
 	clrbits_le32(HHI_MEM_PD_REG0, (1 << 3) | (1<<2));
+
+        // Avoid resetting due to WOL or other events.
+        // We can't just disable WOL resets at this point because
+        // the command to do so (kbi forcereset wol w 0) requires
+        // that the nic is further initialised.
+        run_command("kbi resetflag 0", 0);
 
 	/* hardware reset ethernet phy : gpioz14 connect phyreset pin*/
 	clrbits_le32(PREG_PAD_GPIO3_EN_N, 1 << 14);
