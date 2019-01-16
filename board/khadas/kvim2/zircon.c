@@ -7,13 +7,23 @@
 #include <common.h>
 #include <part.h>
 #include <zircon/zircon.h>
+#include <asm/arch/secure_apb.h>
+#include <aml_i2c.h>
 
 #define PDEV_VID_KHADAS             4
 #define PDEV_PID_VIM2               2
 
 #define NVRAM_LENGTH                (1024 * 1024)
 
+#define CMDLINE_ENTROPY_SIZE        1024
+#define CMDLINE_ENTROPY_BITS        256 // random bits to pass to zircon.
+#define static_assert _Static_assert
+static_assert((CMDLINE_ENTROPY_BITS/8) + 22 < CMDLINE_ENTROPY_SIZE,
+              "Requested entropy doesn't fit in cmdline.");
+
 const char* BOOTLOADER_VERSION = "zircon-bootloader=0.10";
+
+static char entropy_cmdline[CMDLINE_ENTROPY_SIZE] = "kernel.entropy-mixin=";
 
 static const zbi_cpu_config_t cpu_config = {
     .cluster_count = 2,
@@ -304,6 +314,32 @@ failed:
     printf("MAC address parsing failed for \"%s\"\n", getenv("eth_mac"));
 }
 
+// fills an 8 char buffer with random hex digits, drawn from the
+// hardware cprng.
+// WARNING this does not add a '\0' to the end of the buffer.
+static inline void hw_rand_hex(char buf[static 8]) {
+  static const char* hex = "0123456789abcdef";
+
+  uint32_t rnd = readl(P_RAND64_ADDR0);
+  for (int i = 0; i < 8; ++i) {
+    buf[i] = hex[rnd & 0xF];
+    rnd >>= 4;
+  }
+}
+
+static void add_cmdline_entropy(zbi_header_t* zbi) {
+    char *entropy = entropy_cmdline + strlen(entropy_cmdline);
+
+    for (int i = 0; i < CMDLINE_ENTROPY_BITS; i += 32) {
+      hw_rand_hex(entropy);
+      entropy += 8;
+    }
+    entropy = '\0';
+
+    zircon_append_boot_item(zbi, ZBI_TYPE_CMDLINE, 0, entropy_cmdline, CMDLINE_ENTROPY_SIZE);
+    memset(entropy_cmdline, '\0', CMDLINE_ENTROPY_SIZE);
+}
+
 int zircon_preboot(zbi_header_t* zbi) {
     // add CPU configuration
     zircon_append_boot_item(zbi, ZBI_TYPE_CPU_CONFIG, 0, &cpu_config,
@@ -345,6 +381,7 @@ int zircon_preboot(zbi_header_t* zbi) {
     // add platform ID
     zircon_append_boot_item(zbi, ZBI_TYPE_PLATFORM_ID, 0, &platform_id, sizeof(platform_id));
 
+    add_cmdline_entropy(zbi);
     add_partition_map(zbi);
     add_eth_mac_address(zbi);
     return 0;
