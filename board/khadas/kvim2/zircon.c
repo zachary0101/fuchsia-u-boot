@@ -21,7 +21,7 @@
 static_assert((CMDLINE_ENTROPY_BITS/8) + 22 < CMDLINE_ENTROPY_SIZE,
               "Requested entropy doesn't fit in cmdline.");
 
-const char* BOOTLOADER_VERSION = "zircon-bootloader=0.11";
+static const char BOOTLOADER_VERSION[] = "zircon-bootloader=0.11";
 
 static char entropy_cmdline[CMDLINE_ENTROPY_SIZE] = "kernel.entropy-mixin=";
 
@@ -369,9 +369,6 @@ int zircon_preboot(zbi_header_t* zbi) {
                     sizeof(psci_driver));
     zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_ARM_GENERIC_TIMER, &timer_driver,
                     sizeof(timer_driver));
-    zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
-                    sizeof(hdcp_driver));
-
     zircon_append_boot_item(zbi, ZBI_TYPE_KERNEL_DRIVER, KDRV_AMLOGIC_HDCP, &hdcp_driver,
                     sizeof(hdcp_driver));
 
