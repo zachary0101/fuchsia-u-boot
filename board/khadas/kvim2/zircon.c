@@ -321,7 +321,8 @@ static inline void hw_rand_hex(char buf[static 8]) {
   static const char* hex = "0123456789abcdef";
 
   uint32_t rnd = readl(P_RAND64_ADDR0);
-  for (int i = 0; i < 8; ++i) {
+  int i;
+  for (i = 0; i < 8; ++i) {
     buf[i] = hex[rnd & 0xF];
     rnd >>= 4;
   }
@@ -330,7 +331,8 @@ static inline void hw_rand_hex(char buf[static 8]) {
 static void add_cmdline_entropy(zbi_header_t* zbi) {
     char *entropy = entropy_cmdline + strlen(entropy_cmdline);
 
-    for (int i = 0; i < CMDLINE_ENTROPY_BITS; i += 32) {
+    int i;
+    for (i = 0; i < CMDLINE_ENTROPY_BITS; i += 32) {
       hw_rand_hex(entropy);
       entropy += 8;
     }
