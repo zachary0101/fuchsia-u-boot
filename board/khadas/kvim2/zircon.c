@@ -4,11 +4,11 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  */
 
+#include <aml_i2c.h>
+#include <asm/arch/secure_apb.h>
 #include <common.h>
 #include <part.h>
 #include <zircon/zircon.h>
-#include <asm/arch/secure_apb.h>
-#include <aml_i2c.h>
 
 #define PDEV_VID_KHADAS             4
 #define PDEV_PID_VIM2               2
@@ -17,13 +17,22 @@
 
 #define CMDLINE_ENTROPY_SIZE        1024
 #define CMDLINE_ENTROPY_BITS        256 // random bits to pass to zircon.
+
+#define ENTROPY_BITS_PER_CHAR       4
+
+static char entropy_cmdline[CMDLINE_ENTROPY_SIZE] = {0};
+static const char zircon_entropy_arg[] = "kernel.entropy-mixin=";
+
 #define static_assert _Static_assert
-static_assert((CMDLINE_ENTROPY_BITS/8) + 22 < CMDLINE_ENTROPY_SIZE,
+static_assert(CMDLINE_ENTROPY_BITS % 32 == 0,
+              "Requested entropy must be a multiple of 32");
+
+static_assert((CMDLINE_ENTROPY_BITS/ENTROPY_BITS_PER_CHAR) \
+              + sizeof(zircon_entropy_arg) < CMDLINE_ENTROPY_SIZE,
               "Requested entropy doesn't fit in cmdline.");
 
-static const char BOOTLOADER_VERSION[] = "zircon-bootloader=0.11";
+static const char BOOTLOADER_VERSION[] = "zircon-bootloader=0.12";
 
-static char entropy_cmdline[CMDLINE_ENTROPY_SIZE] = "kernel.entropy-mixin=";
 
 static const zbi_cpu_config_t cpu_config = {
     .cluster_count = 2,
@@ -187,6 +196,16 @@ static zbi_partition_map_t partition_map = {
     },
 };
 
+static void* mandatory_memset(void* dst, int c, size_t n) {
+    volatile unsigned char* out = dst;
+    size_t i = 0;
+
+    for (i = 0; i < n; ++i) {
+        out[i] = (unsigned char)c;
+    }
+    return dst;
+}
+
 static void add_partition_map(zbi_header_t* zbi) {
     block_dev_desc_t* dev_desc;
     disk_partition_t bootloader_info;
@@ -314,32 +333,40 @@ failed:
     printf("MAC address parsing failed for \"%s\"\n", getenv("eth_mac"));
 }
 
-// fills an 8 char buffer with random hex digits, drawn from the
-// hardware cprng.
+// fills an 8 char buffer with the lowercase hex representation of the given
+// value.
 // WARNING this does not add a '\0' to the end of the buffer.
-static inline void hw_rand_hex(char buf[static 8]) {
-  static const char* hex = "0123456789abcdef";
+static inline void uint32_to_hex(uint32_t val, char buf[static 8]) {
+  static const char hex[] = "0123456789abcdef";
+  int i = 0;
 
-  uint32_t rnd = readl(P_RAND64_ADDR0);
-  int i;
-  for (i = 0; i < 8; ++i) {
-    buf[i] = hex[rnd & 0xF];
-    rnd >>= 4;
+  for (i = 7; i >= 0; i--) {
+    buf[i] = hex[val & 0xF];
+    val >>= 4;
   }
 }
 
-static void add_cmdline_entropy(zbi_header_t* zbi) {
-    char *entropy = entropy_cmdline + strlen(entropy_cmdline);
+// Reads a value from the userspace hardware random number generator.
+// NOTE that there is no guarantee of the quality of this rng.
+static inline uint32_t read_hw_rng(void) {
+  return readl(P_RAND64_ADDR0);
+}
 
-    int i;
+static void add_cmdline_entropy(zbi_header_t* zbi) {
+    strcpy(entropy_cmdline, zircon_entropy_arg);
+    char *entropy = entropy_cmdline + strlen(zircon_entropy_arg);
+    int i = 0;
+
     for (i = 0; i < CMDLINE_ENTROPY_BITS; i += 32) {
-      hw_rand_hex(entropy);
+      uint32_to_hex(read_hw_rng(), entropy);
       entropy += 8;
     }
-    entropy = '\0';
+    *entropy = '\0';
 
-    zircon_append_boot_item(zbi, ZBI_TYPE_CMDLINE, 0, entropy_cmdline, CMDLINE_ENTROPY_SIZE);
-    memset(entropy_cmdline, '\0', CMDLINE_ENTROPY_SIZE);
+    zircon_append_boot_item(zbi, ZBI_TYPE_CMDLINE, 0, entropy_cmdline,
+                            sizeof(entropy_cmdline));
+
+    mandatory_memset(entropy_cmdline, '\0', sizeof(entropy_cmdline));
 }
 
 int zircon_preboot(zbi_header_t* zbi) {
