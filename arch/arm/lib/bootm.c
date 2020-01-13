@@ -30,6 +30,10 @@
 #include <asm/armv7.h>
 #endif
 
+#if defined(CONFIG_ZIRCON_BOOT_IMAGE)
+#include <zircon/zircon.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
@@ -281,10 +285,11 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		do_nonsec_virt_switch();
 		gd->flags &= ~GD_FLG_SILENT;
 		printf("uboot time: %u us\n", get_time());
-		if (images->os.arch == IH_ARCH_ARM)
+		if (images->os.arch == IH_ARCH_ARM) {
 			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);
-		else
+		} else {
 			kernel_entry(images->ft_addr, NULL, NULL, NULL);
+		}
 	}
 #else
 	unsigned long machid = gd->bd->bi_arch_number;
@@ -404,5 +409,45 @@ void boot_jump_vxworks(bootm_headers_t *images)
 {
 	/* ARM VxWorks requires device tree physical address to be passed */
 	((void (*)(void *))images->ep)(images->ft_addr);
+}
+#endif
+
+#if defined(CONFIG_ZIRCON_BOOT_IMAGE)
+
+#define ZIRCON_KERNEL_ALIGN	65536
+
+int do_bootm_zircon(int flag, int argc, char * const argv[],
+		   bootm_headers_t *images)
+{
+	zbi_header_t* zbi = (zbi_header_t *)images->ep;
+	const zbi_header_t* kernel_hdr = &zbi[1];
+	const zbi_kernel_t* kernel = (zbi_kernel_t *)&zbi[2];
+
+	int ret = zircon_preboot(zbi);
+	if (ret < 0) {
+	    printf("zircon_preboot failed\n");
+	    return ret;
+	}
+
+	uint32_t zbi_len = zbi->length + sizeof(zbi_header_t);
+	uint32_t kernel_len = kernel_hdr->length + 2 * sizeof(zbi_header_t);
+
+	// If zbi_len is greater than kernel_len,
+	// then we have boot items after the kernel.
+	// In that case we must relocate the kernel after the zbi
+	if (zbi_len > kernel_len) {
+		uintptr_t dest = (ulong)zbi + zbi_len;
+		// align to 64K boundary
+		dest = (dest + ZIRCON_KERNEL_ALIGN - 1) & ~(ZIRCON_KERNEL_ALIGN - 1);
+		memcpy((void *)dest, zbi, kernel_len);
+		images->ep = dest + kernel->entry;
+	} else {
+		images->ep = (ulong)zbi + kernel->entry;
+	}
+
+	// this will pass the zbi pointer to the kernel via x0
+	images->ft_addr = (char *)zbi;
+	boot_jump_linux(images, flag);
+	return 0;
 }
 #endif

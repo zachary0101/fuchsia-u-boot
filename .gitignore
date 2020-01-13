@@ -23,6 +23,8 @@
 *.tpl
 *.efuse
 *.encrypt
+*.bin
+*.bl2
 
 # folder
 customer/

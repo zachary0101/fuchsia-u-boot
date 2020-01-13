@@ -303,6 +303,7 @@ obj-y += malloc_simple.o
 endif
 obj-y += image.o
 obj-$(CONFIG_ANDROID_BOOT_IMAGE) += image-android.o
+obj-$(CONFIG_ZIRCON_BOOT_IMAGE) += image-zircon.o
 obj-$(CONFIG_OF_LIBFDT) += image-fdt.o
 obj-$(CONFIG_FIT) += image-fit.o
 obj-$(CONFIG_FIT_SIGNATURE) += image-sig.o
@@ -359,5 +360,8 @@ obj-y += cmd_avb.o
 
 # khadas commands
 obj-$(CONFIG_KHADAS_KBI) += cmd_kbi.o
+
+# zircon commands
+obj-$(CONFIG_ZIRCON_BOOT_IMAGE) += cmd_zircon_bootconfig.o
 
 CFLAGS_env_embedded.o := -Wa,--no-warn -DENV_CRC=$(shell tools/envcrc 2>/dev/null)
